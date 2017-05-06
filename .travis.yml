@@ -1,32 +1,31 @@
-# This file enables the Travis continuous integration system, which
-# automatically builds and tests joda-time for each GitHub commit or 
-# pull request on three separate JDKs.
-#
-# For more information, see https://travis-ci.org
-
-sudo: false
-language: java
-jdk:
-  - oraclejdk8
-  - oraclejdk7
+after_success:
+- if [[ $TRAVIS_TAG =~ ^v.*$ ]] && [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_JDK_VERSION" == "oraclejdk8" ]; then travis_wait 40 mvn site-deploy -e -B --settings .github/maven-settings.xml; fi
+before_cache:
+- rm -rf $HOME/.m2/repository/org/joda/time
+before_install:
+- wget https://dl.dropboxusercontent.com/u/7897865/apache-maven-3.3.9.zip
+- unzip -qq apache-maven-3.3.9.zip
+- export M2_HOME=$PWD/apache-maven-3.3.9
+- export PATH=$M2_HOME/bin:$PATH
 cache:
   directories:
-    - "$HOME/.m2/repository"
-before_cache:
-  - rm -rf $HOME/.m2/repository/org/joda/time
-# install
-install:
-  - mvn --version
-script:
-  - mvn install -e -B
-after_success:
-  - if [[ $TRAVIS_TAG =~ ^v.*$ ]] && [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_JDK_VERSION" == "oraclejdk8" ]; then travis_wait 40 mvn site-deploy -e -B --settings .github/maven-settings.xml; fi
-# secure keys for GITHUB_TOKEN
+  - $HOME/.m2/repository
 env:
   global:
     secure: UK9A4eHPOP6XkYbST1kpv3gVEZTBqp79eCF0nqpXejbXihY58MNVZ0aGt8IM/ZThO/UoK+AxWjaSLljE2Neo4ehxvRHsRG0bIhAoCBUjP6f6vuMYTZlRNb9W+NM3RjXvrQGnCM3PTckWaFQ6i5Ny4e1GuETSdh96Yk7WNn6DMJM=
-before_install:
-  - wget https://dl.dropboxusercontent.com/u/7897865/apache-maven-3.3.9.zip
-  - unzip -qq apache-maven-3.3.9.zip
-  - export M2_HOME=$PWD/apache-maven-3.3.9
-  - export PATH=$M2_HOME/bin:$PATH
+install:
+- mvn --version
+jdk:
+- oraclejdk8
+- oraclejdk7
+language: java
+notifications:
+  email: false
+  slack:
+    rooms: flakycov:U2MeVOPjdi4up1U793ubeIUZ
+    template:
+    - Build <%{build_url}|#%{build_number}> (<%{compare_url}|%{commit}>) of %{repository}@%{branch} by %{author} %{result} in %{duration}
+    - 'dashbot: %{repository_name} %{build_id}'
+script:
+- mvn install -e -B
+sudo: false
